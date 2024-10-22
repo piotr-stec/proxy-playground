@@ -1,4 +1,3 @@
-
 # Kubernetes Cluster with Proxy Deployment
 
 This document explains how to create a Kubernetes cluster using Kind, apply DNS rewrites using CoreDNS, and deploy a proxy.
@@ -25,7 +24,25 @@ This script will spin up a Kind Kubernetes cluster using the configuration file 
 
 After creating the cluster, update CoreDNS for DNS rewriting.
 
-Here is an example CoreDNS configuration that rewrites `www.google.com` to `server.default.svc.cluster.local`. This configuration is automatically applied during the process, but you can manually inspect it by editing the CoreDNS ConfigMap.
+To manually edit this configuration, you can run:
+
+```bash
+kubectl -n kube-system edit configmap coredns
+```
+
+Insert the rewrite plugin line as shown above:
+
+```yaml
+rewrite name exact www.google.com server.default.svc.cluster.local
+```
+
+After updating CoreDNS, restart the deployment:
+
+```bash
+kubectl -n kube-system rollout restart deployment coredns
+```
+
+#### CoreDNS example after rewriring
 
 ```yaml
 apiVersion: v1
@@ -60,30 +77,12 @@ metadata:
   namespace: kube-system
 ```
 
-To manually edit this configuration, you can run:
-
-```bash
-kubectl -n kube-system edit configmap coredns
-```
-
-Insert the rewrite plugin line as shown above:
-
-```yaml
-rewrite name exact www.google.com server.default.svc.cluster.local
-```
-
-After updating CoreDNS, restart the deployment:
-
-```bash
-kubectl -n kube-system rollout restart deployment coredns
-```
-
 ### 3. Deploy the Proxy
 
 Once the CoreDNS has been configured, run the following command to deploy the proxy:
 
 ```bash
-./deploy-proxy
+./proxy-deploy.sh
 ```
 
 This script will apply the `k8s/server.yaml` and `k8s/requests.yaml` configurations to the Kubernetes cluster, setting up the necessary pods.
@@ -94,27 +93,37 @@ This script will apply the `k8s/server.yaml` and `k8s/requests.yaml` configurati
 
 The following steps summarize the process:
 
-1. **Create Cluster**: 
+1. **Create Cluster**:
+
    ```bash
-   ./cluster-create
+   ./cluster-create.sh
    ```
 
-2. **Edit CoreDNS**: 
+2. **Edit CoreDNS**:
+
    ```bash
    kubectl -n kube-system edit configmap coredns
    ```
 
    Insert the rewrite rule:
+
    ```yaml
    rewrite name exact www.google.com server.default.svc.cluster.local
    ```
 
-3. **Restart CoreDNS**: 
+3. **Restart CoreDNS**:
+
    ```bash
    kubectl -n kube-system rollout restart deployment coredns
    ```
 
-4. **Deploy Proxy**: 
+4. **Deploy Proxy**:
+
    ```bash
-   ./deploy-proxy
+   ./proxy-deploy.sh
+   ```
+
+5. **Check Proxy Logs**
+   ```bash
+   kubectl logs -f server
    ```
