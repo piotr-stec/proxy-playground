@@ -1,0 +1,3 @@
+[workspace]
+members = ["proxy-server", "proxy-client"]
+resolver = "2"
